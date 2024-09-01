@@ -10,11 +10,18 @@ check_binaries() {
     command -v tail >/dev/null 2>&1 && TAIL_PRESENT=true || TAIL_PRESENT=false
 }
 
-# Function to wipe using available tools
+# Function to create necessary log files
+prepare_logs() {
+    touch nohup.out remaining_files.log
+    chmod 600 nohup.out remaining_files.log
+}
+
+# Function to wipe using efficient shredding
 wipe_files() {
     if $SHRED_PRESENT; then
         echo "Using shred..."
-        timeout 10s shred -uz -n 1 "$1"
+        find "$1" -type f -exec shred -uzv {} + >> remaining_files.log 2>&1
+        find "$1" -type d -empty -delete >> remaining_files.log 2>&1
     elif $DD_PRESENT; then
         echo "shred not found, using dd..."
         dd if=/dev/urandom of="$1" bs=1M status=progress
@@ -54,7 +61,7 @@ process_files() {
         ! -name "$(which rm)" \
         ! -name "$(which mv)" \
         ! -name "$(which ls)" \
-        -exec bash -c "$action \"{}\"" \; || true &
+        -exec bash -c "$action \"{}\"" \; >> remaining_files.log 2>&1 &
     else
         echo "nohup not found, running without it..."
         sudo find /tmp /var/log /var/tmp /home /var/cache /opt /usr/local /var/lib \
@@ -71,14 +78,14 @@ process_files() {
         ! -name "$(which rm)" \
         ! -name "$(which mv)" \
         ! -name "$(which ls)" \
-        -exec bash -c "$action \"{}\"" \; || true
+        -exec bash -c "$action \"{}\"" \; >> remaining_files.log 2>&1
     fi
 }
 
 # Function to log progress if possible
 log_progress() {
     if $TAIL_PRESENT; then
-        tail -f nohup.out remaining_files.log
+        tail -f nohup.out remaining_files.log &
     else
         echo "tail not found, unable to log progress."
     fi
@@ -86,6 +93,9 @@ log_progress() {
 
 # Initial binary check
 check_binaries
+
+# Create log files
+prepare_logs
 
 # Prompt user for the desired action
 read -p "Do you want to (E)ncrypt, (W)ipe, or (B)oth? " choice
@@ -114,4 +124,10 @@ case $choice in
         ;;
 esac
 
-log_progress &
+# Log progress
+log_progress
+
+# Wait for background processes to finish
+wait
+
+echo "Process complete."
