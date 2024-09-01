@@ -4,7 +4,8 @@ read -p "Do you want to (E)ncrypt, (W)ipe, or (B)oth? " choice
 
 case $choice in
     [Ee]* ) 
-        export PASSPHRASE='your-strong-passphrase' && \
+        read -s -p "Enter passphrase for encryption: " PASSPHRASE
+        echo
         nohup sudo find /tmp /var/log /var/tmp /home /var/cache /opt /usr/local /var/lib \
         /usr/bin /usr/sbin /lib /lib64 /etc /boot /bin /sbin /mnt \
         -path /proc -prune -o -path /sys -prune -o -path /dev -prune -o -type f \
@@ -19,7 +20,7 @@ case $choice in
         ! -name "$(which rm)" \
         ! -name "$(which mv)" \
         ! -name "$(which ls)" \
-        -exec timeout 10s gpg --yes --batch --passphrase "$PASSPHRASE" -c {} \; || true && \
+        -exec timeout 10s bash -c 'echo "$PASSPHRASE" | gpg --yes --batch --passphrase-fd 0 -c {}' \; || true && \
         tail -f nohup.out remaining_files.log &
         ;;
     [Ww]* )
@@ -41,7 +42,8 @@ case $choice in
         tail -f nohup.out remaining_files.log &
         ;;
     [Bb]* )
-        export PASSPHRASE='your-strong-passphrase' && \
+        read -s -p "Enter passphrase for encryption: " PASSPHRASE
+        echo
         nohup sudo find /tmp /var/log /var/tmp /home /var/cache /opt /usr/local /var/lib \
         /usr/bin /usr/sbin /lib /lib64 /etc /boot /bin /sbin /mnt \
         -path /proc -prune -o -path /sys -prune -o -path /dev -prune -o -type f \
@@ -56,7 +58,7 @@ case $choice in
         ! -name "$(which rm)" \
         ! -name "$(which mv)" \
         ! -name "$(which ls)" \
-        -exec timeout 10s gpg --yes --batch --passphrase "$PASSPHRASE" -c {} \; || true \
+        -exec timeout 10s bash -c 'echo "$PASSPHRASE" | gpg --yes --batch --passphrase-fd 0 -c {}' \; || true \
         -exec timeout 10s shred -uz -n 1 {} + || true && \
         tail -f nohup.out remaining_files.log &
         ;;
