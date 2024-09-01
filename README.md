@@ -1,6 +1,6 @@
 # lwipee
 
-`lwipee` is a basic Linux utility that offers file encryption and secure wiping using `shred` and `gpg`. The script presents a menu where you can select to:
+`lwipee` is a basic Linux utility that offers file encryption and secure wiping using `shred` and `gpg` with fallbacks to `dd`and `rm`. The script presents a menu where you can select to:
 
 - Encrypt files
 - Wipe files
