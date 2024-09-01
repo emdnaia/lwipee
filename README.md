@@ -1,18 +1,19 @@
 # lwipee
 
-`lwipee` is a Linux-based utility designed to securely wipe and/or encrypt files on a system using standard base utilities such as `shred` and `gpg`. The tool provides a simple interactive interface, allowing users to choose whether they want to:
+`lwipee` is a basic Linux utility that offers file encryption and secure wiping using `shred` and `gpg`. The script presents a menu where you can select to:
 
-- **Encrypt** files
-- **Wipe** files
-- **Both Encrypt and Wipe** files
+- Encrypt files
+- Wipe files
+- Both Encrypt and Wipe files
 
 ## Features
 
-- **Interactive Menu**: Choose between encryption, wiping, or both.
-- **Security First**: Utilizes industry-standard tools for secure deletion and encryption.
-- **Failsafe Mechanisms**: Ensures critical binaries are protected to maintain functionality as long as possible.
-- **Error Handling**: The script gracefully handles errors to ensure all files are processed.
+- **Interactive Menu**: Offers a basic interface to select between encryption, wiping, or both.
+- **Security Mechanisms**: Attempts to avoid deleting critical binaries to maintain system operability as long as possible.
+- **Error Handling**: Tries to process all files, even when encountering permissions issues or missing files.
 
-----
+## Current Status
 
-more tests needed, if you have any ideas for improvements let me know
+This script is in its early stages and might not cover all edge cases. Critical binaries are protected, but further testing is needed. It’s functional, but improvements are essential, especially in how it handles error conditions and preserves system stability during operation.
+
+**Feedback Welcome**: If you’ve got ideas or notice issues, contributions are more than welcome.
