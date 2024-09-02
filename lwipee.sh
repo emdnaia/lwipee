@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # ==============================
-# Comprehensive System Wiper with Encryption, Decryption, and Advanced Wiping Option
-# Version 10.4
+# Educational Purposes Wiper / Cryptor using basic Linux utils 
+# Still in progress still early alpha, might use it to test things out
+# Version 0.3.3
 # ==============================
 
 set -e
